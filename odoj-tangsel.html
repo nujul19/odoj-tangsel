@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODOJ Tangsel — One Day One Juz</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --hijau: #1D6B4A;
+    --hijau-muda: #2D8F62;
+    --hijau-terang: #3CB87A;
+    --emas: #C9920F;
+    --emas-muda: #F5C842;
+    --krem: #FBF7EE;
+    --krem-gelap: #F0E9D6;
+    --teks-utama: #1A1A1A;
+    --teks-sekunder: #4A4A4A;
+    --teks-ringan: #7A7A7A;
+    --putih: #FFFFFF;
+    --font-arab: 'Amiri', serif;
+    --font-utama: 'Plus Jakarta Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-utama); background: var(--krem); color: var(--teks-utama); line-height: 1.6; }
+
+  .edit-mode [contenteditable] { outline: 2px dashed var(--emas); border-radius: 4px; cursor: text; min-height: 1em; }
+  .edit-mode [contenteditable]:hover { background: rgba(201,146,15,0.08); }
+  .edit-mode [contenteditable]:focus { background: rgba(201,146,15,0.12); outline: 2px solid var(--emas); }
+
+  .edit-bar {
+    position: fixed; top: 0; left: 0; right: 0; background: #111; color: #fff;
+    padding: 10px 24px; z-index: 999; display: flex; align-items: center; gap: 12px;
+    font-size: 13px; transform: translateY(-100%); transition: transform 0.3s;
+  }
+  .edit-bar.visible { transform: translateY(0); }
+  .edit-bar .label { color: var(--emas-muda); font-weight: 700; }
+  .edit-bar .hint { color: rgba(255,255,255,0.5); font-size: 12px; }
+  .edit-bar button { padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer; font-family: var(--font-utama); font-size: 12px; font-weight: 600; margin-left: auto; }
+  .btn-save { background: var(--emas); color: #111; }
+  .btn-cancel { background: transparent; color: #aaa; border: 1px solid #444; margin-left: 6px; }
+
+  .btn-edit-toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 998;
+    background: var(--hijau); color: #fff; border: none; padding: 12px 20px;
+    border-radius: 50px; font-family: var(--font-utama); font-size: 13px;
+    font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(29,107,74,0.4);
+  }
+
+  header { background: linear-gradient(160deg, var(--hijau) 0%, #0F3D28 100%); color: #fff; position: relative; overflow: hidden; }
+  header::before {
+    content: ''; position: absolute; inset: 0; opacity: 0.6;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; position: relative; z-index: 2; }
+  .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
+  .logo-icon { width: 44px; height: 44px; background: var(--emas); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-family: var(--font-arab); font-size: 22px; color: #111; font-weight: 700; }
+  .logo-text strong { font-size: 18px; font-weight: 700; display: block; line-height: 1.1; }
+  .logo-text small { font-size: 11px; opacity: 0.7; letter-spacing: 0.5px; }
+  nav ul { list-style: none; display: flex; gap: 28px; }
+  nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  nav a:hover { color: var(--emas-muda); }
+  .nav-daftar { background: var(--emas); color: #111 !important; padding: 8px 20px; border-radius: 50px; font-weight: 700 !important; }
+
+  .hero { padding: 70px 40px 90px; max-width: 860px; margin: 0 auto; text-align: center; position: relative; z-index: 2; }
+  .ayat-arabic { font-family: var(--font-arab); font-size: 30px; line-height: 1.8; color: var(--emas-muda); margin-bottom: 6px; direction: rtl; }
+  .ayat-latin { font-size: 13px; color: rgba(255,255,255,0.6); font-style: italic; margin-bottom: 36px; }
+  .hero h1 { font-size: clamp(30px, 5vw, 50px); font-weight: 700; line-height: 1.15; margin-bottom: 18px; }
+  .hero h1 em { color: var(--emas-muda); font-style: normal; }
+  .hero p { font-size: 16px; color: rgba(255,255,255,0.8); max-width: 540px; margin: 0 auto 36px; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary { background: var(--emas); color: #111; padding: 13px 26px; border-radius: 50px; font-weight: 700; font-size: 15px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; display: inline-block; }
+  .btn-primary:hover { background: var(--emas-muda); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: #fff; padding: 13px 26px; border-radius: 50px; font-weight: 600; font-size: 15px; text-decoration: none; border: 2px solid rgba(255,255,255,0.4); transition: all 0.2s; display: inline-block; }
+  .btn-outline:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
+
+  .hero-stats { display: flex; justify-content: center; margin-top: 56px; background: rgba(255,255,255,0.07); border-radius: 16px; padding: 22px 32px; }
+  .stat { padding: 0 26px; text-align: center; border-right: 1px solid rgba(255,255,255,0.15); }
+  .stat:last-child { border-right: none; }
+  .stat strong { display: block; font-size: 26px; font-weight: 700; color: var(--emas-muda); }
+  .stat span { font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.5px; }
+
+  .wave { display: block; margin-bottom: -2px; }
+
+  .wrap { padding: 72px 40px; max-width: 1100px; margin: 0 auto; }
+  .tag { display: inline-block; background: rgba(29,107,74,0.12); color: var(--hijau); padding: 4px 14px; border-radius: 50px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .sec-title { font-size: clamp(24px, 3.5vw, 36px); font-weight: 700; margin-bottom: 10px; }
+  .sec-sub { font-size: 15px; color: var(--teks-sekunder); max-width: 520px; }
+
+  .programs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 44px; }
+  .pc { background: #fff; border-radius: 20px; padding: 26px; border: 1px solid rgba(0,0,0,0.06); transition: all 0.3s; position: relative; overflow: hidden; }
+  .pc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--hijau-terang); }
+  .pc.gold::before { background: var(--emas); }
+  .pc.teal::before { background: #1A9AAA; }
+  .pc.rose::before { background: #C44B7E; }
+  .pc:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(29,107,74,0.13); }
+  .pc-icon { width: 50px; height: 50px; border-radius: 14px; background: rgba(29,107,74,0.1); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 14px; }
+  .pc.gold .pc-icon { background: rgba(201,146,15,0.12); }
+  .pc.teal .pc-icon { background: rgba(26,154,170,0.12); }
+  .pc.rose .pc-icon { background: rgba(196,75,126,0.12); }
+  .pc h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .pc p { font-size: 13px; color: var(--teks-sekunder); line-height: 1.6; }
+  .badge { display: inline-block; margin-top: 10px; background: rgba(29,107,74,0.08); color: var(--hijau); padding: 3px 10px; border-radius: 50px; font-size: 11px; font-weight: 700; }
+  .pc.gold .badge { background: rgba(201,146,15,0.1); color: #8B6009; }
+  .pc.teal .badge { background: rgba(26,154,170,0.1); color: #0F6E7A; }
+  .pc.rose .badge { background: rgba(196,75,126,0.1); color: #8B2856; }
+
+  .faq-list { margin-top: 32px; display: flex; flex-direction: column; gap: 8px; }
+  .fi { background: #fff; border-radius: 14px; border: 1px solid rgba(0,0,0,0.07); overflow: hidden; }
+  .fq { padding: 16px 20px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; user-select: none; }
+  .fq:hover { background: rgba(29,107,74,0.04); }
+  .arrow { color: var(--hijau); font-size: 20px; transition: transform 0.3s; flex-shrink: 0; display: inline-block; }
+  .fa-ans { padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.3s; font-size: 13px; color: var(--teks-sekunder); line-height: 1.7; }
+  .fi.open .fa-ans { max-height: 250px; padding: 0 20px 16px; }
+  .fi.open .arrow { transform: rotate(180deg); }
+
+  .daftar-box {
+    background: linear-gradient(135deg, #0F3D28 0%, var(--hijau) 100%);
+    border-radius: 28px; padding: 56px 52px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: start; color: #fff;
+  }
+  .daftar-box .tag { background: rgba(255,255,255,0.15); color: var(--emas-muda); }
+  .daftar-box .sec-title { color: #fff; }
+  .daftar-box .sec-sub { color: rgba(255,255,255,0.75); max-width: 100%; }
+  .steps { margin-top: 28px; display: flex; flex-direction: column; gap: 16px; }
+  .step { display: flex; gap: 14px; align-items: flex-start; }
+  .snum { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: var(--emas); color: #111; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .step h4 { font-size: 14px; font-weight: 600; color: #fff; }
+  .step p { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+
+  .dcard { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 28px; border: 1px solid rgba(255,255,255,0.15); }
+  .dcard h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .dcard > p { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 22px; }
+  .dbtn { display: block; text-align: center; background: var(--emas); color: #111; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; text-decoration: none; transition: all 0.2s; }
+  .dbtn:hover { background: var(--emas-muda); }
+  .divider { display: flex; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,0.5); margin: 12px 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.2); }
+  .wabtn { display: flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: #fff; padding: 13px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; transition: all 0.2s; }
+  .wabtn:hover { background: #1EB85A; }
+  .cinfo { margin-top: 18px; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 14px 16px; }
+  .cinfo p { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .cinfo strong { color: var(--emas-muda); font-size: 14px; display: block; margin-top: 4px; }
+
+  .galeri-banner {
+    margin-top: 44px; background: #fff; border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.07); display: flex; align-items: stretch;
+    text-decoration: none; color: inherit; transition: all 0.3s;
+  }
+  .galeri-banner:hover { box-shadow: 0 12px 40px rgba(29,107,74,0.15); transform: translateY(-2px); }
+  .gb-visual { width: 200px; flex-shrink: 0; background: linear-gradient(135deg, var(--hijau) 0%, var(--hijau-terang) 100%); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
+  .gb-visual span { font-size: 48px; }
+  .gb-visual small { font-size: 12px; color: rgba(255,255,255,0.75); font-family: var(--font-utama); }
+  .gb-body { padding: 28px 32px; flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .gb-body h3 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+  .gb-body p { font-size: 14px; color: var(--teks-sekunder); }
+  .gb-btn { flex-shrink: 0; background: var(--hijau); color: #fff; padding: 11px 22px; border-radius: 50px; font-weight: 700; font-size: 14px; white-space: nowrap; }
+
+  .events-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 18px; margin-top: 20px; }
+  .ec { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); transition: all 0.3s; }
+  .ec:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.09); }
+  .ei { height: 130px; background: linear-gradient(135deg, var(--hijau) 0%, #1A6B42 100%); display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; }
+  .ei.gold { background: linear-gradient(135deg, #8B6009 0%, #C9920F 100%); }
+  .ei.teal { background: linear-gradient(135deg, #0F6E56 0%, #1D9E75 100%); }
+  .elabel { position: absolute; top: 10px; left: 10px; background: var(--emas); color: #111; padding: 3px 10px; border-radius: 50px; font-size: 11px; font-weight: 700; }
+  .eb { padding: 18px; }
+  .eb h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .eb p { font-size: 13px; color: var(--teks-sekunder); line-height: 1.55; }
+  .emeta { margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .emeta span { font-size: 12px; color: var(--teks-ringan); }
+
+  .team-section { background: #fff; border-radius: 28px; padding: 56px; margin: 0 40px 40px; }
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 14px; margin-top: 40px; }
+  .tc { background: var(--krem); border-radius: 16px; padding: 24px 14px; text-align: center; border: 1px solid rgba(0,0,0,0.05); transition: all 0.3s; }
+  .tc:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(29,107,74,0.1); background: #fff; }
+  .av { width: 62px; height: 62px; border-radius: 50%; background: var(--hijau); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; margin: 0 auto 12px; }
+  .av.gold { background: var(--emas); color: #111; }
+  .av.teal { background: #1A9AAA; }
+  .av.rose { background: #C44B7E; }
+  .av.purple { background: #6B5DD3; }
+  .av.orange { background: #D36B1D; }
+  .av.gray { background: #9CA3AF; }
+  .tc h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .tc small { font-size: 11px; color: var(--hijau); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  .kontak-box { background: var(--krem-gelap); border-radius: 28px; padding: 56px; text-align: center; }
+  .kontak-links { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+  .kbtn { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid rgba(0,0,0,0.08); padding: 11px 20px; border-radius: 50px; text-decoration: none; color: var(--teks-utama); font-weight: 600; font-size: 14px; transition: all 0.2s; }
+  .kbtn:hover { background: var(--hijau); color: #fff; border-color: var(--hijau); }
+
+  footer { background: #0F1F17; color: rgba(255,255,255,0.55); padding: 28px 40px; text-align: center; font-size: 13px; }
+  footer a { color: var(--emas-muda); text-decoration: none; }
+
+  @media (max-width: 768px) {
+    nav ul { display: none; }
+    .hero { padding: 36px 20px 56px; }
+    .hero-stats { flex-direction: column; gap: 16px; padding: 20px; }
+    .stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.15); padding: 10px 0; }
+    .stat:last-child { border-bottom: none; }
+    .wrap { padding: 56px 20px; }
+    .daftar-box { grid-template-columns: 1fr; padding: 36px 24px; }
+    .team-section { margin: 0 16px 32px; padding: 36px 20px; }
+    .kontak-box { padding: 36px 20px; }
+    .galeri-banner { flex-direction: column; }
+    .gb-visual { width: 100%; height: 90px; flex-direction: row; gap: 12px; }
+    .gb-body { flex-direction: column; align-items: flex-start; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="edit-bar" id="editBar">
+  <span class="label">✏️ MODE EDIT AKTIF</span>
+  <span class="hint">— Klik teks mana saja untuk mengedit</span>
+  <button class="btn-save" onclick="saveContent()">💾 Simpan</button>
+  <button class="btn-cancel" onclick="toggleEdit()">Batal</button>
+</div>
+<button class="btn-edit-toggle" id="editToggle" onclick="toggleEdit()">✏️ Edit Konten</button>
+
+<!-- HEADER -->
+<header>
+  <nav>
+    <a href="#" class="logo">
+      <div class="logo-icon">و</div>
+      <div class="logo-text">
+        <strong>ODOJ Tangsel</strong>
+        <small>ONE DAY ONE JUZ</small>
+      </div>
+    </a>
+    <ul>
+      <li><a href="#program">Program</a></li>
+      <li><a href="#kegiatan">Kegiatan</a></li>
+      <li><a href="#pengurus">Pengurus</a></li>
+      <li><a href="#kontak">Kontak</a></li>
+      <li><a href="#daftar" class="nav-daftar">Daftar</a></li>
+    </ul>
+  </nav>
+  <div class="hero">
+    <div class="ayat-arabic">وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا</div>
+    <div class="ayat-latin">"Dan bacalah Al-Qur'an itu dengan perlahan-lahan." (QS. Al-Muzzammil: 4)</div>
+    <h1>Komunitas <em>Al-Qur'an</em><br>Tangerang Selatan</h1>
+    <p contenteditable="false">Bergabunglah bersama ODOJers Tangsel yang istiqomah tilawah setiap hari. Bersama lebih mudah, lebih semangat, lebih berkah!</p>
+    <div class="hero-cta">
+      <a href="https://tinyurl.com/Daftar-OdojTangsel" target="_blank" class="btn-primary">📋 Daftar Sekarang</a>
+      <a href="https://www.instagram.com/odojtangsel/" target="_blank" class="btn-outline">📷 Instagram Kami</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><strong contenteditable="false">1.000+</strong><span>ANGGOTA AKTIF</span></div>
+      <div class="stat"><strong contenteditable="false">30+</strong><span>GRUP TILAWAH</span></div>
+      <div class="stat"><strong>4</strong><span>PROGRAM</span></div>
+      <div class="stat"><strong>Tangsel</strong><span>WILAYAH</span></div>
+    </div>
+  </div>
+</header>
+
+<svg class="wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 60">
+  <path fill="#FBF7EE" d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,30 1440,20 L1440,60 L0,60 Z"/>
+</svg>
+
+<!-- PROGRAM -->
+<div class="wrap" id="program">
+  <div class="tag">Program Kami</div>
+  <h2 class="sec-title">Pilih Sesuai Kemampuanmu</h2>
+  <p class="sec-sub">ODOJ hadir dengan 4 program tilawah agar semua kalangan bisa istiqomah berinteraksi dengan Al-Qur'an setiap hari.</p>
+  <div class="programs-grid">
+    <div class="pc rose">
+      <div class="pc-icon">✨</div>
+      <h3>ODOJ Star (OS)</h3>
+      <p>Tilawah Al-Qur'an setiap hari, minimal 1 ayat hingga maksimal 1 juz. Program paling fleksibel — yang penting istiqomah!</p>
+      <span class="badge">Min. 1 Ayat / Hari</span>
+    </div>
+    <div class="pc gold">
+      <div class="pc-icon">🌙</div>
+      <h3>ODALF</h3>
+      <p>One Day A Half Juz — tilawah setengah juz setiap hari. Cocok untuk yang ingin meningkatkan tilawah secara bertahap.</p>
+      <span class="badge">½ Juz / Hari</span>
+    </div>
+    <div class="pc">
+      <div class="pc-icon">📖</div>
+      <h3>ODOJ</h3>
+      <p>One Day One Juz — membaca 1 juz Al-Qur'an setiap hari. Program utama agar bisa khatam Al-Qur'an setiap bulan.</p>
+      <span class="badge">1 Juz / Hari</span>
+    </div>
+    <div class="pc teal">
+      <div class="pc-icon">⭐</div>
+      <h3>ODOLKids</h3>
+      <p>Khusus anak usia di bawah 12 tahun. Membiasakan si kecil tilawah maksimal 1 lembar setiap hari sejak dini.</p>
+      <span class="badge">1 Lembar / Hari</span>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div style="margin-top: 60px;">
+    <div class="tag">FAQ</div>
+    <h2 class="sec-title">Pertanyaan yang Sering Ditanyakan</h2>
+    <div class="faq-list">
+      <div class="fi">
+        <div class="fq" onclick="toggleFaq(this)">Bagaimana cara kerja ODOJ? <span class="arrow">⌄</span></div>
+        <div class="fa-ans">ODOJ adalah komunitas tilawah melalui WhatsApp. Setiap anggota membaca Al-Qur'an sesuai program yang dipilih, lalu melaporkan ke grup WA. Admin akan mencatat dan memotivasi anggota untuk terus istiqomah setiap hari.</div>
+      </div>
+      <div class="fi">
+        <div class="fq" onclick="toggleFaq(this)">Di mana dan kapan membacanya? <span class="arrow">⌄</span></div>
+        <div class="fa-ans">Di Masjid/Mushola lebih utama, namun bisa juga di rumah, kantor, di angkot — di mana saja yang memungkinkan. Durasi membaca 24 jam, mulai dari Maghrib sampai sebelum Maghrib esok harinya.</div>
+      </div>
+      <div class="fi">
+        <div class="fq" onclick="toggleFaq(this)">Bagaimana cara laporan tilawah? <span class="arrow">⌄</span></div>
+        <div class="fa-ans">Cukup ketik di grup WhatsApp, misalnya: "Adit juz 20 khatam" atau "Odoj lapor Adit juz 20 selesai". Tidak perlu direkam suara atau video. Setelah laporan, boleh lanjut ke juz/halaman berikutnya.</div>
+      </div>
+      <div class="fi">
+        <div class="fq" onclick="toggleFaq(this)">Apakah ada biaya pendaftaran? <span class="arrow">⌄</span></div>
+        <div class="fa-ans">Tidak ada! Bergabung dengan Komunitas ODOJ Tangsel sepenuhnya gratis. 1 grup tilawah beranggotakan 30 orang, dan laki-laki serta perempuan dipisahkan grupnya.</div>
+      </div>
+      <div class="fi">
+        <div class="fq" onclick="toggleFaq(this)">Bagaimana jika tidak bisa selesai dalam sehari? <span class="arrow">⌄</span></div>
+        <div class="fa-ans">Laporkan saja berapa yang sudah terbaca. Sisa yang belum terselesaikan akan "dilelang" kepada anggota lain yang bersedia membantu menyelesaikannya. Yang penting tetap istiqomah setiap hari!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PENDAFTARAN -->
+<div class="wrap" id="daftar" style="padding-top: 0;">
+  <div class="daftar-box">
+    <div>
+      <div class="tag">Cara Bergabung</div>
+      <h2 class="sec-title">Mulai Perjalananmu Bersama ODOJ Tangsel</h2>
+      <p class="sec-sub">Proses pendaftaran mudah, cepat, dan gratis. Siapkan semangat tilawahmu!</p>
+      <div class="steps">
+        <div class="step"><div class="snum">1</div><div><h4>Isi Formulir Pendaftaran</h4><p>Klik tombol daftar dan isi Google Form dengan data lengkapmu.</p></div></div>
+        <div class="step"><div class="snum">2</div><div><h4>Pilih Program Tilawahmu</h4><p>Pilih OS, ODALF, ODOJ, atau ODOLKids sesuai kemampuan.</p></div></div>
+        <div class="step"><div class="snum">3</div><div><h4>Tunggu Undangan Grup WA</h4><p>Admin akan memasukkanmu ke grup WhatsApp sesuai program yang dipilih.</p></div></div>
+        <div class="step"><div class="snum">4</div><div><h4>Mulai Tilawah & Laporan</h4><p>Istiqomah setiap hari dan laporkan tilawahmu di grup. Bismillah!</p></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="dcard">
+        <h3>Daftar ODOJ Tangsel</h3>
+        <p>Bergabung sekarang — gratis, proses cepat!</p>
+        <a href="https://tinyurl.com/Daftar-OdojTangsel" target="_blank" class="dbtn">📋 Isi Formulir Pendaftaran Online</a>
+        <div class="divider">atau hubungi langsung</div>
+        <a href="https://wa.me/6281317042031" target="_blank" class="wabtn">💬 WhatsApp Admin</a>
+        <div class="cinfo">
+          <p>Info Pendaftaran:</p>
+          <strong contenteditable="false">📱 +62 813-1704-2031 · Bunda Apriana</strong>
+        </div>
+      </div>
+      <div style="margin-top: 18px; background: rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.12);">
+        <p style="font-size: 12px; color: var(--emas-muda); font-weight: 700; margin-bottom: 8px;">💬 Testimoni Member</p>
+        <p style="font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.7;" contenteditable="false">"Yang awalnya ngaji suka mood-moodan, setelah ikut ODOJ jadi kebutuhan sehari-hari. Hati gak tenang kalau belum laporan! Alhamdulillah."</p>
+        <p style="margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.45);" contenteditable="false">— Member ODOJ Tangsel</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KEGIATAN -->
+<div class="wrap" id="kegiatan">
+  <div class="tag">Kegiatan</div>
+  <h2 class="sec-title">Agenda & Galeri Kegiatan</h2>
+  <p class="sec-sub">Selain tilawah harian, kami rutin mengadakan berbagai kegiatan islami yang memperkuat ukhuwah ODOJers Tangsel.</p>
+
+  <a href="https://tinyurl.com/KegiatanDPATangsel" target="_blank" class="galeri-banner">
+    <div class="gb-visual">
+      <span>📸</span>
+      <small>Galeri Foto</small>
+    </div>
+    <div class="gb-body">
+      <div>
+        <h3>Galeri Kegiatan ODOJ Tangsel</h3>
+        <p>Dokumentasi lengkap berbagai kegiatan, kajian, dan momen kebersamaan ODOJers. Cocok dibagikan ke media sosialmu!</p>
+      </div>
+      <span class="gb-btn">Lihat Galeri →</span>
+    </div>
+  </a>
+
+  <div class="events-grid">
+    <div class="ec">
+      <div class="ei"><span>📚</span><div class="elabel">Rutin</div></div>
+      <div class="eb">
+        <h3 contenteditable="false">KalQulus — Kajian Al-Qur'an</h3>
+        <p contenteditable="false">Kajian tafsir Al-Qur'an bulanan bersama ustadz pilihan. Bukan hanya membaca, tapi juga memahami maknanya secara mendalam.</p>
+        <div class="emeta"><span>📅 <span contenteditable="false">Setiap Bulan</span></span><span>📍 <span contenteditable="false">Area Tangsel</span></span></div>
+      </div>
+    </div>
+    <div class="ec">
+      <div class="ei gold"><span>🎓</span><div class="elabel">Program</div></div>
+      <div class="eb">
+        <h3 contenteditable="false">Matador — Majelis Tahsin</h3>
+        <p contenteditable="false">Belajar membaca Al-Qur'an dengan benar bersama ustadz. Perbaiki makhorijul huruf dan tajwid secara gratis!</p>
+        <div class="emeta"><span>📅 <span contenteditable="false">Rutin</span></span><span>📍 <span contenteditable="false">Online / Offline</span></span></div>
+      </div>
+    </div>
+    <div class="ec">
+      <div class="ei teal"><span>🌟</span><div class="elabel">Tahunan</div></div>
+      <div class="eb">
+        <h3 contenteditable="false">Khataman & Silaturrahim Akbar</h3>
+        <p contenteditable="false">Khataman Al-Qur'an bersama seluruh ODOJers Tangsel. Momen ukhuwah, saling mendoakan, dan merayakan istiqomah bersama.</p>
+        <div class="emeta"><span>📅 <span contenteditable="false">Akhir Tahun</span></span><span>📍 <span contenteditable="false">Tangsel Area</span></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PENGURUS -->
+<div class="team-section" id="pengurus">
+  <div class="tag">Tim Pengurus</div>
+  <h2 class="sec-title">Pengurus ODOJ Tangsel</h2>
+  <p class="sec-sub">Dikelola dengan penuh dedikasi oleh para relawan pecinta Al-Qur'an.</p>
+  <div class="team-grid">
+    <div class="tc">
+      <div class="av gold">FR</div>
+      <h4 contenteditable="false">Fauzi Rahman</h4>
+      <small>Ketua Umum</small>
+    </div>
+    <div class="tc">
+      <div class="av gray">—</div>
+      <h4 contenteditable="false" style="color: var(--teks-ringan); font-style: italic;">Belum diisi</h4>
+      <small>Sekretaris</small>
+    </div>
+    <div class="tc">
+      <div class="av teal">NV</div>
+      <h4 contenteditable="false">Nuzul Vicri</h4>
+      <small>Bendahara</small>
+    </div>
+    <div class="tc">
+      <div class="av rose">AP</div>
+      <h4 contenteditable="false">Bunda Apriana</h4>
+      <small>PSDM</small>
+    </div>
+    <div class="tc">
+      <div class="av purple">NT</div>
+      <h4 contenteditable="false">Nitawati</h4>
+      <small>Project</small>
+    </div>
+    <div class="tc">
+      <div class="av orange">AN</div>
+      <h4 contenteditable="false">Anita</h4>
+      <small>Promas</small>
+    </div>
+  </div>
+</div>
+
+<!-- KONTAK -->
+<div class="wrap" id="kontak" style="padding-top: 0;">
+  <div class="kontak-box">
+    <div class="tag">Hubungi Kami</div>
+    <h2 class="sec-title">Ada Pertanyaan?</h2>
+    <p style="color: var(--teks-sekunder); max-width: 420px; margin: 10px auto 0; font-size: 15px;" contenteditable="false">Kami siap membantu. Hubungi admin atau temukan kami di media sosial.</p>
+    <div class="kontak-links">
+      <a href="https://www.instagram.com/odojtangsel/" target="_blank" class="kbtn">📷 Instagram @odojtangsel</a>
+      <a href="https://wa.me/6281317042031" target="_blank" class="kbtn">💬 WA Bunda Apriana</a>
+      <a href="https://tinyurl.com/Daftar-OdojTangsel" target="_blank" class="kbtn">📋 Formulir Pendaftaran</a>
+      <a href="https://tinyurl.com/KegiatanDPATangsel" target="_blank" class="kbtn">📸 Galeri Kegiatan</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2025 <strong style="color: rgba(255,255,255,0.85);">ODOJ Tangsel</strong> — Komunitas One Day One Juz Tangerang Selatan</p>
+  <p style="margin-top: 6px;">Bagian dari <a href="https://onedayonejuz.org" target="_blank">Komunitas One Day One Juz</a> Nasional &nbsp;·&nbsp; Info: <a href="https://wa.me/6281317042031">Bunda Apriana +62 813-1704-2031</a></p>
+</footer>
+
+<script>
+  let isEditing = false;
+
+  function toggleEdit() {
+    isEditing = !isEditing;
+    const bar = document.getElementById('editBar');
+    const btn = document.getElementById('editToggle');
+    const els = document.querySelectorAll('[contenteditable]');
+    document.body.classList.toggle('edit-mode', isEditing);
+    bar.classList.toggle('visible', isEditing);
+    btn.textContent = isEditing ? '✕ Keluar Edit' : '✏️ Edit Konten';
+    els.forEach(el => el.setAttribute('contenteditable', isEditing ? 'true' : 'false'));
+  }
+
+  function saveContent() {
+    const els = document.querySelectorAll('[contenteditable]');
+    const data = {};
+    els.forEach((el, i) => { data['e' + i] = el.innerHTML; });
+    localStorage.setItem('odoj_v2', JSON.stringify(data));
+    const btn = document.querySelector('.btn-save');
+    btn.textContent = '✅ Tersimpan!';
+    setTimeout(() => { btn.textContent = '💾 Simpan'; }, 2000);
+    toggleEdit();
+  }
+
+  function loadContent() {
+    const saved = localStorage.getItem('odoj_v2');
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      const els = document.querySelectorAll('[contenteditable]');
+      els.forEach((el, i) => { if (data['e' + i]) el.innerHTML = data['e' + i]; });
+    } catch(e) {}
+  }
+
+  function toggleFaq(el) {
+    const item = el.parentElement;
+    document.querySelectorAll('.fi').forEach(i => { if (i !== item) i.classList.remove('open'); });
+    item.classList.toggle('open');
+  }
+
+  loadContent();
+</script>
+</body>
+</html>
